@@ -1,6 +1,6 @@
 # # MV_TTT
 #
-# A simple tictactoe application demonstrating an 'umbeatable' AI
+# A simple tictactoe application demonstrating an (TODO:P) 'unbeatable' AI
 # using the MinMac Algorith.
 #
 # Created for a chance at a Mindvalley career!
@@ -16,6 +16,8 @@ from curtsies import FullscreenWindow, Input, fsarray
 # and a little standard library!
 import sys
 from collections import OrderedDict
+from itertools import permutations
+import copy
 
 coordinates = OrderedDict()
 TURN = 'O'
@@ -178,11 +180,68 @@ def win_condition(board):
 
 
 def log_board_layout(choice=None, player=None):
+    '''
+    Manages the players ex/oh placement persistence
+    '''
     global BOARD
     if choice and player:
         BOARD[choice] = player
         return
     return BOARD
+
+def alpha_go(grid, board):
+    '''
+    AI player. Should calculate the next best move through min-max ranking
+    '''
+    global TURN
+
+    # calculate the best next move
+    best_seq = minmax(copy.copy(log_board_layout()))
+    next_move = list(best_seq).pop()
+
+    # register the move as per a human player
+    log_board_layout(next_move, 'X')
+    choice = list(board.keys())[next_move]
+
+    # Draw it to the grid
+    grid = draw_exs(grid, board[choice])
+    TURN = 'O'
+    return grid
+
+def value(board, player='X', round=None, layout=None):
+    """
+    Recursively determine the minmax value associated with a board
+    permutation.
+    """
+    global ROUND
+    if round == ROUND:
+        layout = copy.copy(log_board_layout())
+    layout[board.pop()] = player
+    w = win_condition(layout)
+    if w == player:
+        return 1
+    if w == "O":
+        return -1
+    if round > 8 or not board:
+        return 0
+
+
+    if player == 'X':
+        return max([value(board, player, round+1, layout) for b in board])
+    else:
+        return min([value(board, "O", round+1, layout) for b in board])
+
+
+def minmax(board, player='X'):
+    """
+    Returns best next board
+    """
+    global ROUND
+
+    # Calculate all possible game permutations
+    possible_moves = set(range(1,10)).difference(set(board.keys()))
+    possible_games = permutations(possible_moves)
+    return sorted(possible_games, key=lambda b: value(list(b), player, ROUND))[-1]
 
 
 def main():
@@ -232,36 +291,37 @@ def main():
                     sys.exit()
 
                 # 6) Game loop pauses on every pass to await the users next input
-                c = input.next()
+                if TURN == 'O':
+                    c = input.next()
 
-                # Exits on Escape key press
-                if c == '' or c == '<ESC>':
-                    sys.exit()
+                    # Exits on Escape key press
+                    if c == '' or c == '<ESC>':
+                        sys.exit()
 
-                # Catch numeric input for determination of where
-                # to draw the ex's and oh's
-                # TODO prevent key presses overriding previous choices.
-                elif c in map('{}'.format, range(1, 10)) and ROUND > 0:
-                    b[2:3, :] = fsarray(['{}You pressed key {}.'
-                                        .format(half_half, c)])
+                    # Catch numeric input for determination of where
+                    # to draw the ex's and oh's
+                    # TODO prevent key presses overriding previous choices.
+                    elif c in map('{}'.format, range(1, 10)) and ROUND > 0:
+                        b[2:3, :] = fsarray(['{}You pressed key {}.'
+                                            .format(half_half, c)])
 
-                    coords = list(coordinates.keys())[int(c) - 1]
-                    coords = coordinates[coords]
+                        coords = list(coordinates.keys())[int(c) - 1]
+                        coords = coordinates[coords]
 
-                    # Capture the players choice to help calculation of winning
-                    # plays.
-                    log_board_layout(int(c), TURN)
-                    if TURN == 'O':
-                        draw_oh(b, coords)
-                        TURN = 'X'
-                    else:
-                        draw_exs(b, coords)
-                        TURN = 'O'
-                    window.render_to_terminal(b)
+                        # Capture the players choice to help calculation of winning
+                        # plays.
+                        log_board_layout(int(c), TURN)
+                        if TURN == 'O':
+                            draw_oh(b, coords)
+                            TURN = 'X'
+                        else:
+                            # draw_exs(b, coords)
+                            TURN = 'O'
+                        window.render_to_terminal(b)
 
-                # TODO Don't increment the round if a different key is pressed
-                # else:
-                #     continue
+                    # TODO Don't increment the round if a different key is pressed
+                    # else:
+                    #     continue
 
                 b[b.height - 1:b.height, :] = fsarray(['{} It is round {}.'
                                                       .format(half_half, ROUND)])
@@ -276,9 +336,11 @@ def main():
                     ROUND += 1
                     continue
                 b[0:1, :] = ex_turn
+                # A small homage to: http://deepmind.com/alpha-go.html
+                b = alpha_go(b, coordinates)
                 ROUND += 1
                 window.render_to_terminal(b)
-                continue
+
 
 
 if __name__ == '__main__':
