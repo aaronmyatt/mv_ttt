@@ -100,27 +100,11 @@ def main():
             b = make_grid(block(' ', 5, 8))
             while True:
                 window.render_to_terminal(b)
-                # if b.turn == 9 or b.winner():
-                #     c = input.next() # hit any key
-                #     sys.exit()
                 while True:
                     c = input.next()
-                    if c == '':
+                    if c == '' or c == '<ESC>':
                         sys.exit()
-                #     try:
-                #         if int(c) in range(9):
-                #             b = b.move(int(c))
-                #     except ValueError:
-                #         window.render_to_terminal(fsarray([blue("ELLOR!")]))
-                #         time.sleep(1)
-                #         window.render_to_terminal(b.display())
-                #         continue
-                #     window.render_to_terminal(b.display())
-                #     break
-                # if b.turn == 9 or b.winner():
-                #     c = input.next() # hit any key
-                #     sys.exit()
-                # b = ai(b, 'o')
+
 
 if __name__ == '__main__':
-    all_exs()
+    main()
