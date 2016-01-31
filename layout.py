@@ -2,7 +2,9 @@ import sys
 
 from curtsies.fmtfuncs import *
 from curtsies import FullscreenWindow, Input, fsarray
+from collections import OrderedDict
 
+coordinates = OrderedDict()
 
 def base():
     return fsarray([x*(7*8) for x in 'X'*(5*7)])
@@ -17,26 +19,8 @@ def make_grid(block):
     '''
     insert blocks at specified intervals
     '''
-    width = int(block.width)
-    height = int(block.height)
+
     grid = base()
-
-    # row1 (5down, 10down, 8over, 16over)
-    # grid[5:5+5, 8:8+8] = block
-    # grid[5:5+5, 8*3:(8*3)+8] = block
-    # grid[5:5+5, 8*5:(8*5)+8] = block
-    #
-    # # row2
-    # grid[5*3:(5*3)+5, 8:8+8] = block
-    # grid[5*3:(5*3)+5, 8*3:(8*3)+8] = block
-    # grid[5*3:(5*3)+5, 8*5:(8*5)+8] = block
-    #
-    # # row3
-    # grid[5*5:(5*5)+5, 8:8+8] = block
-    # grid[5*5:(5*5)+5, 8*3:(8*3)+8] = block
-    # grid[5*5:(5*5)+5, 8*5:(8*5)+8] = block
-
-    # TODO Given the time, let's make the grid rendering more sensible.
     grid = render_rows(grid, block)
 
     return grid
@@ -56,27 +40,58 @@ def render_rows(grid, block, size=3):
 
             # place block, block.height*row from top and block.width*column from right
             grid[from_top:tuntil, from_right:wuntil] = block
+
+            # store block coordinates for later
+            label = '{r}{c}'.format(r=row,c=column)
+            coordinates[label] = (from_top, from_right)
     return grid
 
 
 def all_ohs():
-    with Input() as input:
-        with FullscreenWindow() as window:
-            b = make_grid(block(' ', 5, 8))
-            while True:
+    with FullscreenWindow() as window:
+        b = make_grid(block(' ', 5, 8))
+        while True:
+            window.render_to_terminal(b)
+            for k in coordinates:
+                b = draw_oh(b, coordinates[k])
                 window.render_to_terminal(b)
-                for coord in threeby3():
-                    draw_oh(coord)
 
-def place_oh(grid, coord):
-    oh = block('O', 4, 7)
-    oh_inner = block(' ', 2, 3)
-    oh[1:3, 2:5] = oh_inner
 
-    grid[coord[0]:coord[0]+5, 8:8+8] = oh
+def all_exs():
+    with FullscreenWindow() as window:
+        b = make_grid(block(' ', 5, 8))
+        while True:
+            window.render_to_terminal(b)
+            for k in coordinates:
+                b = draw_exs(b, coordinates[k])
+                window.render_to_terminal(b)
 
-def place_ex(grid, coord):
-    pass
+def draw_oh(grid, coord):
+    oh = block('O', 5, 6)
+    oh_inner = block(' ', 3, 4)
+    oh[1:4, 1:5] = oh_inner
+
+    height = coord[0]
+    width = coord[1]+1
+
+    # place block, block.height*row from top and block.width*column from right
+    grid[height:height+oh.height, width:width+oh.width] = oh
+    return grid
+
+def draw_exs(grid, coord):
+    ex = block('`', 5, 6)
+    ex[0:1, :] = fsarray(['\    /'])
+    ex[1:2, :] = fsarray([' \  / '])
+    ex[2:3, :] = fsarray(['  \/  '])
+    ex[3:4, :] = fsarray(['  /\  '])
+    ex[4:5, :] = fsarray([' /  \\ '])
+    
+    height = coord[0]
+    width = coord[1]+1
+
+    # place block, block.height*row from top and block.width*column from right
+    grid[height:height+ex.height, width:width+ex.width] = ex
+    return grid
 
 
 def main():
@@ -108,4 +123,4 @@ def main():
                 # b = ai(b, 'o')
 
 if __name__ == '__main__':
-    main()
+    all_exs()
