@@ -5,6 +5,9 @@ from curtsies import FullscreenWindow, Input, fsarray
 from collections import OrderedDict
 
 coordinates = OrderedDict()
+TURN = 'O'
+oh_turn = fsarray(['''It's OH's turn'''])
+ex_turn = fsarray(['''It's EX's turn'''])
 
 def base():
     return fsarray([x*(7*8) for x in 'X'*(5*7)])
@@ -95,15 +98,28 @@ def draw_exs(grid, coord):
 
 
 def main():
+    global TURN
     with Input() as input:
         with FullscreenWindow() as window:
             b = make_grid(block(' ', 5, 8))
+            half_half = ' '*int((b.width/2)/2)
+            b[0:1, :] = fsarray(['{}PRESS A KEY TO GET STARTED'
+                                .format(half_half)])
+            window.render_to_terminal(b)
             while True:
+                c = input.next()
+                if c == '' or c == '<ESC>':
+                    sys.exit()
+
+                if TURN == 'O':
+                    b[0:1, :] = oh_turn
+                    window.render_to_terminal(b)
+                    TURN = 'X'
+                    continue
+                b[0:1, :] = ex_turn
                 window.render_to_terminal(b)
-                while True:
-                    c = input.next()
-                    if c == '' or c == '<ESC>':
-                        sys.exit()
+                TURN='O'
+                continue
 
 
 if __name__ == '__main__':
